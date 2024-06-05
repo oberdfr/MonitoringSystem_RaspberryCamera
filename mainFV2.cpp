@@ -138,8 +138,6 @@ int main(int argc, char** argv)
         char esc = cv::waitKey(5);
         if (esc == 27) break;
 
-        cv::Mat frame
-
         // http://localhost:8080/bgr
         std::vector<uchar> buff_bgr;
         cv::imencode(".jpg", frame, buff_bgr, params);
