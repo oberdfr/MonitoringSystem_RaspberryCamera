@@ -143,13 +143,6 @@ int main(int argc, char** argv)
         cv::imencode(".jpg", frame, buff_bgr, params);
         streamer.publish("/bgr", std::string(buff_bgr.begin(), buff_bgr.end()));
 
-        cv::Mat hsv;
-        cv::cvtColor(frame, hsv, cv::COLOR_BGR2HSV);
-
-        // http://localhost:8080/hsv
-        std::vector<uchar> buff_hsv;
-        cv::imencode(".jpg", hsv, buff_hsv, params);
-        streamer.publish("/hsv", std::string(buff_hsv.begin(), buff_hsv.end()));
     }
 
     streamer.stop();
