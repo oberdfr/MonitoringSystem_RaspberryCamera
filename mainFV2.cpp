@@ -22,7 +22,12 @@
 #include <vector>
 #include "yolo-fastestv2.h"
 
+#include <nadjieb/mjpeg_streamer.hpp>
+
 yoloFastestv2 yoloF2;
+
+// for convenience
+using MJPEGStreamer = nadjieb::MJPEGStreamer;
 
 const char* class_names[] = {
     "background", "person", "bicycle",
@@ -96,14 +101,23 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 90};
+
+    MJPEGStreamer streamer;
+
+    // By default 1 worker is used for streaming
+    // if you want to use 4 workers:
+    //      streamer.start(8080, 4);
+    streamer.start(8000);
+
     std::cout << "Start grabbing, press ESC on Live window to terminate" << std::endl;
 
-    while (1) {
+    while (streamer.isRunning()) {
         // frame = cv::imread("000139.jpg");  //need to refresh frame before dnn class detection
         cap >> frame;
         if (frame.empty()) {
             std::cerr << "ERROR: Unable to grab from the camera" << std::endl;
-            break;
+            exit(EXIT_FAILURE);
         }
 
         Tbegin = std::chrono::steady_clock::now();
@@ -123,6 +137,23 @@ int main(int argc, char** argv)
         cv::imshow("Jetson Nano", frame);
         char esc = cv::waitKey(5);
         if (esc == 27) break;
+
+        cv::Mat frame
+
+        // http://localhost:8080/bgr
+        std::vector<uchar> buff_bgr;
+        cv::imencode(".jpg", frame, buff_bgr, params);
+        streamer.publish("/bgr", std::string(buff_bgr.begin(), buff_bgr.end()));
+
+        cv::Mat hsv;
+        cv::cvtColor(frame, hsv, cv::COLOR_BGR2HSV);
+
+        // http://localhost:8080/hsv
+        std::vector<uchar> buff_hsv;
+        cv::imencode(".jpg", hsv, buff_hsv, params);
+        streamer.publish("/hsv", std::string(buff_hsv.begin(), buff_hsv.end()));
     }
+
+    streamer.stop();
     return 0;
 }

@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1696072155 source:/home/raspberry/Documents/YoloFastestV2-ncnn-Raspberry-Pi-4/WORKSPACE/mainFV2.cpp
+1717600451 source:/home/raspberry/Documents/YoloFastestV2-ncnn-Raspberry-Pi-4/WORKSPACE/mainFV2.cpp
 	<opencv2/core/core.hpp>
 	<opencv2/highgui/highgui.hpp>
 	<opencv2/imgproc/imgproc.hpp>
@@ -7,6 +7,7 @@
 	<stdio.h>
 	<vector>
 	"yolo-fastestv2.h"
+	<nadjieb/mjpeg_streamer.hpp>
 
 1717494947 /usr/local/include/opencv4/opencv2/core/core.hpp
 	"opencv2/core.hpp"
