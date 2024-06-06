@@ -18,9 +18,11 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <vector>
 #include "yolo-fastestv2.h"
+#include "include/HTTPRequest.hpp"
 
 #include <nadjieb/mjpeg_streamer.hpp>
 
@@ -53,8 +55,7 @@ static int draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, boo
     int nPeople = 0;
 
     for (size_t i = 0; i < boxes.size(); i++) {
-        // Se display_all è false, visualizza solo le persone (categoria 1)
-        if (!display_all && boxes[i].cate != 0) { // 0 corrisponde alla persona nel class_names senza "background"
+        if (!display_all && boxes[i].cate != 0) {
             continue;
         }
 
@@ -87,6 +88,7 @@ static int draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, boo
 
 int main(int argc, char** argv)
 {
+    int counter = 0;
     float f;
     float FPS[16];
     int i, Fcnt = 0;
@@ -150,6 +152,28 @@ int main(int argc, char** argv)
         std::vector<uchar> buff_bgr;
         cv::imencode(".jpg", frame, buff_bgr, params);
         streamer.publish("/bgr", std::string(buff_bgr.begin(), buff_bgr.end()));
+
+        if (counter >= 5){
+        std::cout << "counter reached 5: starting http request" << std::endl;
+            counter=0;
+            std::cout << "counter resetted to 0" << std::endl;
+            //httpreq
+            try {
+                // you can pass http::InternetProtocol::V6 to Request to make an IPv6 request
+                http::Request request{"http://192.168.100.109:5000/mandacounter?people=" + std::to_string(nPeople)};
+
+                // send a get request
+                const auto response = request.send("GET");
+                std::cout << std::string{response.body.begin(), response.body.end()} << '\n'; // print the result
+            }
+            catch (const std::exception& e) {
+                std::cerr << "Request failed, error: " << e.what() << '\n';
+            }
+
+        } else {
+            counter++;
+        }
+
 
     }
 
