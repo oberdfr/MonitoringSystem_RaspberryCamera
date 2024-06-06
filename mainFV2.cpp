@@ -48,13 +48,18 @@ const char* class_names[] = {
     "teddy bear", "hair drier", "toothbrush"
 };
 
-static void draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, bool display_all)
-{
+static int draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, bool display_all) {
+
+    int nPeople = 0;
+
     for (size_t i = 0; i < boxes.size(); i++) {
         // Se display_all è false, visualizza solo le persone (categoria 1)
         if (!display_all && boxes[i].cate != 0) { // 0 corrisponde alla persona nel class_names senza "background"
             continue;
         }
+
+        // increment people counter
+        nPeople++;
 
         char text[256];
         sprintf(text, "%s %.1f%%", class_names[boxes[i].cate + 1], boxes[i].score * 100);
@@ -76,6 +81,8 @@ static void draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, bo
         cv::rectangle(cvImg, cv::Point(boxes[i].x1, boxes[i].y1),
                       cv::Point(boxes[i].x2, boxes[i].y2), cv::Scalar(255, 0, 0));
     }
+
+    return nPeople;
 }
 
 int main(int argc, char** argv)
@@ -86,6 +93,9 @@ int main(int argc, char** argv)
     cv::Mat frame;
     //some timing
     std::chrono::steady_clock::time_point Tbegin, Tend;
+
+    //number of people
+    int nPeople = 0;
 
     bool display_all = false; // Variabile toggle per visualizzare tutte le categorie o solo le persone
 
@@ -124,19 +134,17 @@ int main(int argc, char** argv)
 
         std::vector<TargetBox> boxes;
         yoloF2.detection(frame, boxes);
-        draw_objects(frame, boxes, display_all); // Passa display_all a draw_objects
+        nPeople = draw_objects(frame, boxes, display_all); // Passa display_all a draw_objects
         Tend = std::chrono::steady_clock::now();
 
         //calculate frame rate
-        f = std::chrono::duration_cast<std::chrono::milliseconds>(Tend - Tbegin).count();
-        if (f > 0.0) FPS[(Fcnt++ & 0x0F)] = 1000.0 / f;
-        for (f = 0.0, i = 0; i < 16; i++) { f += FPS[i]; }
-        putText(frame, cv::format("FPS %0.2f", f / 16), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+        //f = std::chrono::duration_cast<std::chrono::milliseconds>(Tend - Tbegin).count();
+        //if (f > 0.0) FPS[(Fcnt++ & 0x0F)] = 1000.0 / f;
+        //for (f = 0.0, i = 0; i < 16; i++) { f += FPS[i]; }
+        //putText(frame, cv::format("FPS %0.2f", f / 16), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 
-        //show output
-        cv::imshow("Jetson Nano", frame);
-        char esc = cv::waitKey(5);
-        if (esc == 27) break;
+        // Show number of people
+        putText(frame, cv::format("People: %d", nPeople), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 
         // http://localhost:8080/bgr
         std::vector<uchar> buff_bgr;
