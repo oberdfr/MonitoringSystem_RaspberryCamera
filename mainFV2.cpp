@@ -146,7 +146,7 @@ int main(int argc, char** argv)
         //putText(frame, cv::format("FPS %0.2f", f / 16), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 
         // Show number of people
-        putText(frame, cv::format("People: %d", nPeople), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+        //putText(frame, cv::format("People: %d", nPeople), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
 
         // http://localhost:8000/bgr
         std::vector<uchar> buff_bgr;
