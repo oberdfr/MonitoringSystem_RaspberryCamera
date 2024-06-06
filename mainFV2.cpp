@@ -50,6 +50,16 @@ const char* class_names[] = {
     "teddy bear", "hair drier", "toothbrush"
 };
 
+float round(int n){
+    float y, d;
+    y= n*100;
+    d = y -(int)y;
+    y= (float)(int)(n*100)/100;
+    if (d > 0.5)
+        y += 0.01;
+    return y;
+}
+
 static int draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, bool display_all) {
 
     int nPeople = 0;
@@ -97,8 +107,8 @@ int main(int argc, char** argv)
     std::chrono::steady_clock::time_point Tbegin, Tend;
 
     //number of people
-    int nPeople = 0;
-
+    int nPeopleNow = 0;
+    float nPeopleBuffer = 0;
     bool display_all = false; // Variabile toggle per visualizzare tutte le categorie o solo le persone
 
     for (i = 0; i < 16; i++) FPS[i] = 0.0;
@@ -136,7 +146,8 @@ int main(int argc, char** argv)
 
         std::vector<TargetBox> boxes;
         yoloF2.detection(frame, boxes);
-        nPeople = draw_objects(frame, boxes, display_all); // Passa display_all a draw_objects
+        nPeopleNow = draw_objects(frame, boxes, display_all); // Passa display_all a draw_objects
+        nPeopleBuffer = nPeopleBuffer + nPeopleNow;
         Tend = std::chrono::steady_clock::now();
 
         //calculate frame rate
@@ -153,14 +164,13 @@ int main(int argc, char** argv)
         cv::imencode(".jpg", frame, buff_bgr, params);
         streamer.publish("/bgr", std::string(buff_bgr.begin(), buff_bgr.end()));
 
-        if (counter >= 5){
-        std::cout << "counter reached 5: starting http request" << std::endl;
-            counter=0;
+        if (counter >= 20){
+            std::cout << "counter reached 5: starting http request" << std::endl;
             std::cout << "counter resetted to 0" << std::endl;
             //httpreq
             try {
                 // you can pass http::InternetProtocol::V6 to Request to make an IPv6 request
-                http::Request request{"http://192.168.100.109:5000/mandacounter?people=" + std::to_string(nPeople)};
+                http::Request request{"http://192.168.100.109:5000/mandacounter?people=" + std::to_string(round(nPeopleBuffer/counter))};
 
                 // send a get request
                 const auto response = request.send("GET");
@@ -169,6 +179,8 @@ int main(int argc, char** argv)
             catch (const std::exception& e) {
                 std::cerr << "Request failed, error: " << e.what() << '\n';
             }
+            counter=0;
+            nPeopleBuffer = nPeopleNow;
 
         } else {
             counter++;
