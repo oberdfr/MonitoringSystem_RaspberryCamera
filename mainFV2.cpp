@@ -120,6 +120,9 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);  // Sostituisci con la larghezza desiderata
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480); // Sostituisci con l'altezza desiderata
+
     std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 90};
 
     MJPEGStreamer streamer;
