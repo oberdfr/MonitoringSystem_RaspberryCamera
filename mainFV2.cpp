@@ -1,19 +1,3 @@
-// Tencent is pleased to support the open source community by making ncnn available.
-//
-// Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-//
-// Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
-// in compliance with the License. You may obtain a copy of the License at
-//
-// https://opensource.org/licenses/BSD-3-Clause
-//
-// Unless required by applicable law or agreed to in writing, software distributed
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
-
-//modified 12-31-2021 Q-engineering
-
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -21,6 +5,7 @@
 #include <fstream>
 #include <stdio.h>
 #include <vector>
+#include <thread>
 #include "yolo-fastestv2.h"
 #include "include/HTTPRequest.hpp"
 
@@ -61,7 +46,6 @@ float round(int n){
 }
 
 static int draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, bool display_all) {
-
     int nPeople = 0;
 
     for (size_t i = 0; i < boxes.size(); i++) {
@@ -96,12 +80,25 @@ static int draw_objects(cv::Mat& cvImg, const std::vector<TargetBox>& boxes, boo
     return nPeople;
 }
 
+void send_http_request(float people_count) {
+    try {
+        // you can pass http::InternetProtocol::V6 to Request to make an IPv6 request
+        http::Request request{"http://192.168.100.103:5000/mandacounter?people=" + std::to_string(round(people_count))};
+
+        // send a get request
+        const auto response = request.send("GET");
+        std::cout << std::string{response.body.begin(), response.body.end()} << '\n'; // print the result
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Request failed, error: " << e.what() << '\n';
+    }
+}
+
 int main(int argc, char** argv)
 {
     int counter = 0;
-    float f;
     float FPS[16];
-    int i, Fcnt = 0;
+    int i;
     cv::Mat frame;
     //some timing
     std::chrono::steady_clock::time_point Tbegin, Tend;
@@ -164,29 +161,18 @@ int main(int argc, char** argv)
         cv::imencode(".jpg", frame, buff_bgr, params);
         streamer.publish("/bgr", std::string(buff_bgr.begin(), buff_bgr.end()));
 
-        if (counter >= 20){
-            std::cout << "counter reached 5: starting http request" << std::endl;
+        if (counter >= 60){  // Riduci la frequenza di invio delle richieste HTTP
+            std::cout << "counter reached 60: starting http request" << std::endl;
             std::cout << "counter resetted to 0" << std::endl;
             //httpreq
-            try {
-                // you can pass http::InternetProtocol::V6 to Request to make an IPv6 request
-                http::Request request{"http://192.168.100.109:5000/mandacounter?people=" + std::to_string(round(nPeopleBuffer/counter))};
-
-                // send a get request
-                const auto response = request.send("GET");
-                std::cout << std::string{response.body.begin(), response.body.end()} << '\n'; // print the result
-            }
-            catch (const std::exception& e) {
-                std::cerr << "Request failed, error: " << e.what() << '\n';
-            }
-            counter=0;
+            std::thread http_thread(send_http_request, nPeopleBuffer/counter);
+            http_thread.detach();
+            counter = 0;
             nPeopleBuffer = nPeopleNow;
 
         } else {
             counter++;
         }
-
-
     }
 
     streamer.stop();
